@@ -12,6 +12,10 @@ Tài liệu này giải thích chi tiết cách code hoạt động từ **Clien
    - map thêm `id` và chuẩn hoá `image`
 3. React nhận JSON và render `ProductCard`.
 
+Ngoài ra endpoint `GET /api/products` hỗ trợ tìm kiếm:
+- `GET /api/products?q=<keyword>`
+- filter theo `name` hoặc `description` bằng regex case-insensitive
+
 ### Luồng “thêm / cập nhật sản phẩm” (có upload ảnh)
 1. React dùng `FormData` và gửi `multipart/form-data` tới:
    - `POST /api/products`
@@ -92,6 +96,10 @@ Mấu chốt:
 - map sang response:
   - `id: _id.toString()`
   - `image: normalizeImagePath(p.image)`
+
+Tìm kiếm:
+- Nhận query param `q`
+- Lọc theo `name` hoặc `description` (regex i)
 
 ##### `POST /api/products`
 Middleware:
@@ -242,8 +250,9 @@ curl -X DELETE http://localhost:5000/api/products/<id>
 ```
 
 ## 6) Ghi chú mở rộng
-Nếu bạn muốn “Categories / bộ lọc”, bạn có thể:
-- thêm UI input category trở lại (hoặc thêm dropdown)
-- server giữ nguyên field `category` trong schema
-- thêm query params cho `GET /api/products?category=...` (mình có thể làm tiếp nếu bạn yêu cầu).
+Hiện tại frontend CRUD tập trung vào các field: `name`, `price`, `description`, `stock`, và upload ảnh (`imageFile`).
+
+Nếu bạn muốn mở rộng thêm:
+- Thêm filter theo `category` (schema vẫn có `category`)
+- Hoặc thêm filter theo `price/stock`
 

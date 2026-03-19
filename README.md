@@ -105,6 +105,10 @@ Các field:
 - Mỗi item có thêm:
   - `id` (chuỗi từ `_id`) để frontend dễ dùng
   - `image` đã được chuẩn hóa về dạng `"/images/..."`.
+-
+Hỗ trợ tìm kiếm:
+- `GET /api/products?q=<keyword>`
+- Tìm theo `name` hoặc `description` (không phân biệt hoa/thường).
 
 ### 2) `POST /api/products`
 - Content-Type: `multipart/form-data`
@@ -133,6 +137,10 @@ Nếu upload có file `imageFile`:
 
 ## Frontend CRUD
 Các thao tác trên trang `Home`:
+- Tìm kiếm:
+  - ô nhập keyword (tìm theo tên hoặc mô tả)
+  - nút `Tìm kiếm` gọi `GET /api/products?q=...`
+  - nút `Xóa tìm` quay về `GET /api/products`
 - Form **Thêm sản phẩm**:
   - nhập `name`, `price`, `description`, `stock`
   - chọn file ảnh (upload)
