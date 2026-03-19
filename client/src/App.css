@@ -63,6 +63,72 @@ body {
   min-height: 600px;
 }
 
+.product-area {
+  flex: 1;
+  background-color: #fafafa;
+  padding: 30px 40px;
+}
+
+.crud-form {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  margin-bottom: 30px;
+}
+
+.crud-form h2 {
+  margin-bottom: 15px;
+  font-size: 24px;
+}
+
+.crud-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.crud-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+}
+
+.crud-inline-form {
+  margin-top: 10px;
+}
+
+.crud-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.crud-button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  background-color: #667eea;
+  color: white;
+  font-weight: 600;
+}
+
+.crud-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.crud-button-secondary {
+  background-color: #6c757d;
+}
+
+.crud-button-danger {
+  background-color: #e74c3c;
+}
+
 .sidebar {
   width: 250px;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -88,9 +154,6 @@ body {
 }
 
 .product-list {
-  flex: 1;
-  background-color: #fafafa;
-  padding: 30px 40px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 30px;
