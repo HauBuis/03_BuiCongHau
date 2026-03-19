@@ -16,14 +16,43 @@ Các thao tác CRUD (Thêm / Sửa / Xóa) hoạt động thông qua API:
 - Node.js
 - MongoDB (local hoặc Atlas) và cấu hình `MONGODB_URI`
 
-## Cấu hình môi trường (`server/.env`)
+## Cài đặt toàn bộ dự án
+
+### Chuẩn bị
+- Đảm bảo bạn đã cài **Node.js**.
+- Đảm bảo **MongoDB** đang chạy hoặc bạn có thể truy cập MongoDB Atlas qua `MONGODB_URI`.
+
+### Bước 1: Cài dependencies
+Mở terminal ở thư mục gốc `03_BuiCongHau`, sau đó:
+
+```bash
+# backend
+cd server
+npm install
+
+# frontend
+cd ../client
+npm install
+```
+
+Thư viện chính sẽ được cài tự động theo `package.json`:
+- `server/`: `express`, `cors`, `mongoose`, `dotenv`, `multer`, `nodemon`
+- `client/`: `react`, `react-dom`, `react-scripts` và các thư viện test đi kèm
+
+
+### Bước 2: Cấu hình `.env` cho backend
 Tạo file `server/.env` với nội dung:
+
 ```env
 MONGODB_URI="mongodb://USER:PASSWORD@HOST:PORT/DBNAME"
 ```
+
 Lưu ý:
-- Không commit thông tin nhạy cảm (tài khoản/mật khẩu) ra git.
-- Đường dẫn URI có thể là local hoặc MongoDB Atlas đều được.
+- Không commit thông tin nhạy cảm ra git.
+- `MONGODB_URI` có thể là local hoặc MongoDB Atlas.
+
+### Bước 3: Khởi chạy 2 phần
+Bạn chạy backend và frontend bằng 2 terminal khác nhau (hoặc tab terminal khác nhau).
 
 ## Cách chạy dự án
 
