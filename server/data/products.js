@@ -8,7 +8,8 @@ const ProductSchema = new mongoose.Schema(
     category: { type: String },
     stock: { type: Number, min: 0, default: 0 },
 
-    image: { type: String, default: "/uploads/anh-san-pham.jpg" },
+    // Ảnh phục vụ bởi express.static("public") tại /images/...
+    image: { type: String, default: "/images/hoa1.jpg" },
   },
   {
     collection: "products",

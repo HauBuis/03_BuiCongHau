@@ -5,7 +5,7 @@ function ProductList({ products }) {
   return (
     <section className="product-list">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard key={product.id || product._id} product={product} />
       ))}
     </section>
   );
