@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const ProductSchema = new mongoose.Schema(
   {
-    id: { type: String, required: true, unique: true },
 
     name: { type: String, required: true, trim: true },
 
@@ -10,7 +9,7 @@ const ProductSchema = new mongoose.Schema(
 
     price: { type: Number, required: true, min: 0 },
 
-    image: { type: String, required: true },
+    image: { type: String, default: "/images/hoa1.jpg" },
 
     stock: { type: Number, min: 0, default: 0 },
 
