@@ -152,6 +152,10 @@ body {
 .sidebar ul {
   list-style: none;
 }
+.sidebar a {
+  text-decoration: none;  
+  color: white;       
+}
 
 .sidebar li {
   margin-bottom: 15px;
@@ -209,4 +213,8 @@ body {
   font-weight: bold;
   font-size: 20px;
   color: #4CAF50;
+}
+
+.full-width {
+  grid-column: 1 / -1;
 }
