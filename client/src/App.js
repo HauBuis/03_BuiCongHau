@@ -4,18 +4,22 @@ import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
+import Products from "./components/Products";
+import ProductDetail from "./components/ProductDetail";
 import Admin from "./pages/Admin";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedProductId, setSelectedProductId] = useState(null);
+  const [adminMode, setAdminMode] = useState("add");
 
-  const handlePageChange = (page, productId = null) => {
+  const handlePageChange = (page, option = null) => {
     setCurrentPage(page);
-    if (productId) {
-      setSelectedProductId(productId);
+    if (page === "admin" && option) {
+      setAdminMode(option);
+    }
+    if (page === "detail" && option) {
+      setSelectedProductId(option);
     }
   };
 
@@ -38,7 +42,7 @@ function App() {
           />
         )}
         {currentPage === "admin" && (
-          <Admin onNavigate={handlePageChange} />
+          <Admin onNavigate={handlePageChange} mode={adminMode} />
         )}
       </div>
 
