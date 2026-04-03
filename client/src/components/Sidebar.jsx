@@ -44,7 +44,7 @@ function Sidebar({ currentPage }) {
             }}
           >
             <span>Sản phẩm</span>
-            <span className={`chevron ${expandedMenu === "products" ? "open" : ""}`}>▼</span>
+            <span className={`chevron ${expandedMenu === "products" ? "open" : ""}`}>˅</span>
           </button>
 
           {expandedMenu === "products" && (
@@ -52,11 +52,11 @@ function Sidebar({ currentPage }) {
               <button className="submenu-link" onClick={() => navigate("/products")}>
                 Tất cả sản phẩm
               </button>
-              <button className="submenu-link" onClick={() => navigate("/products")}>
+              <button className="submenu-link" onClick={() => navigate("/products?category=bánh-ngọt")}>
                 Bánh ngọt
               </button>
-              <button className="submenu-link" onClick={() => navigate("/products")}>
-                Kẹo & Snack
+              <button className="submenu-link" onClick={() => navigate("/products?category=kẹo-snack")}>
+                Kẹo ngọt
               </button>
             </div>
           )}
@@ -72,7 +72,7 @@ function Sidebar({ currentPage }) {
             }}
           >
             <span>Admin</span>
-            <span className={`chevron ${expandedMenu === "admin" ? "open" : ""}`}>▼</span>
+            <span className={`chevron ${expandedMenu === "admin" ? "open" : ""}`}>˅</span>
           </button>
 
           {expandedMenu === "admin" && (

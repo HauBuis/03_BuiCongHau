@@ -44,7 +44,7 @@ function ProductDetail() {
         className="back-button"
         onClick={() => navigate("/products")}
       >
-        ← Quay lại
+        < Quay lại
       </button>
 
       <div className="detail-container">

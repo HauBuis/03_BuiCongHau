@@ -41,6 +41,9 @@ function AddProductAdmin({ onProductAdded, loading, setLoading }) {
         .filter(tag => tag !== "");
       fData.append("tags", JSON.stringify(tagsArray));
       
+      // Gửi type (category)
+      fData.append("type", JSON.stringify({ name: formData.category }));
+      
       // Loại bỏ events - không cần gửi
 
       if (formData.imageFile) {

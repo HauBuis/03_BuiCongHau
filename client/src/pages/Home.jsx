@@ -19,16 +19,12 @@ function Home() {
 
       <section className="features">
         <div className="feature-card">
-          <h3>🍰 Bánh Ngọt</h3>
+          <h3> Bánh Ngọt</h3>
           <p>Những chiếc bánh tươi mới hàng ngày</p>
         </div>
         <div className="feature-card">
-          <h3>🍬 Kẹo Ngon</h3>
+          <h3> Kẹo Ngon</h3>
           <p>Các loại kẹo chọn lọc từ khắp nơi</p>
-        </div>
-        <div className="feature-card">
-          <h3>🎉 Sự kiện</h3>
-          <p>Thích hợp cho mọi dự tiệc và sự kiện</p>
         </div>
       </section>
 

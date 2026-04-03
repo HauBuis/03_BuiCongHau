@@ -36,7 +36,7 @@ function Admin() {
   return (
     <div className="admin-page">
       <button className="back-button" onClick={() => navigate("/")}>
-        ← Quay lại
+        < Quay lại
       </button>
 
       <h1>Quản lý sản phẩm</h1>
