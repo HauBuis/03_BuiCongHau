@@ -1,39 +1,54 @@
 import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
-import Header from "./components/Header";
-import Sidebar from "./components/Sidebar";
+
 import Footer from "./components/Footer";
-import Home from "./pages/Home";
-import Products from "./components/Products";
+import Header from "./components/Header";
 import ProductDetail from "./components/ProductDetail";
+import Sidebar from "./components/Sidebar";
 import Admin from "./pages/Admin";
+import Home from "./pages/Home";
+import Products from "./pages/Products";
 
 function App() {
   const location = useLocation();
 
-  // Determine current page from location path for sidebar highlighting
-  const getCurrentPage = () => {
-    const path = location.pathname;
-    if (path === "/") return "home";
-    if (path === "/products") return "products";
-    if (path.startsWith("/detail")) return "detail";
-    if (path.startsWith("/admin")) return "admin";
-    return "home";
-  };
+  function getCurrentPage() {
+    const { pathname } = location;
 
-  const currentPage = getCurrentPage();
+    if (pathname === "/" || pathname === "/home") {
+      return "home";
+    }
+
+    if (pathname.startsWith("/products")) {
+      return "products";
+    }
+
+    if (pathname.startsWith("/admin")) {
+      return "admin";
+    }
+
+    if (pathname.startsWith("/about")) {
+      return "about";
+    }
+
+    return "home";
+  }
 
   return (
     <div className="app-layout">
       <Header />
-      <Sidebar currentPage={currentPage} />
+      <Sidebar currentPage={getCurrentPage()} />
 
       <div className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/detail/:id" element={<ProductDetail />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/products/category/:categoryId" element={<Products />} />
+          <Route path="/products/search/keyword" element={<Products />} />
+          <Route path="/about" element={<div>About Page</div>} />
           <Route path="/admin/:mode?" element={<Admin />} />
         </Routes>
       </div>

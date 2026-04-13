@@ -6,17 +6,16 @@ const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
 
-// Load biến môi trường từ `server/.env`
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-// `server/data/products.js` đang đóng vai trò schema/model Mongoose
 const Product = require("./db/products");
 
 const app = express();
+const publicDir = path.join(__dirname, "public");
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(publicDir));
 
 app.get("/", (req, res) => {
   res.json({ message: "Server is running!" });
@@ -24,13 +23,15 @@ app.get("/", (req, res) => {
 
 async function connectMongo() {
   const hasEnv = Boolean(process.env.MONGODB_URI);
+  const dbName = process.env.MONGODB_DB_NAME || "Cake";
   const mongoURI =
     process.env.MONGODB_URI ||
-    "mongodb+srv://conghau0704900193_db_user:0862049637@flower.ldto7ql.mongodb.net/?appName=Flower"
-    ;
+    "mongodb+srv://conghau0704900193_db_user:0862049637@flower.ldto7ql.mongodb.net/?appName=Flower";
+
   try {
     console.log("MONGODB_URI loaded from .env:", hasEnv ? "yes" : "no");
-    await mongoose.connect(mongoURI);
+    console.log("MongoDB database:", dbName);
+    await mongoose.connect(mongoURI, { dbName });
     console.log("MongoDB connected");
   } catch (err) {
     console.error("MongoDB connection error:", err?.message || err);
@@ -42,28 +43,78 @@ function isMongoConnected() {
 }
 
 function escapeRegExp(str) {
-  // Escape ký tự đặc biệt để dùng an toàn trong RegExp
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function buildCategoryFilter(categoryValue) {
+  const normalized = String(categoryValue || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return {};
+  }
+
+  if (normalized === "banh-ngot") {
+    return {
+      $or: [
+        { "type.id": "banh-ngot" },
+        { "type.id": { $in: ["T01", "T02", "T04", "T05", "T06"] } },
+        { "type.name": /bánh/i },
+      ],
+    };
+  }
+
+  if (normalized === "keo-ngot" || normalized === "keo-snack") {
+    return {
+      $or: [
+        { "type.id": "keo-ngot" },
+        { "type.id": { $in: ["T03", "T07"] } },
+        { "type.name": /kẹo/i },
+      ],
+    };
+  }
+
+  return {
+    $or: [
+      { "type.id": normalized },
+      { "type.name": new RegExp(escapeRegExp(normalized), "i") },
+    ],
+  };
+}
+
 function normalizeImagePath(image) {
-  // Chỉ phục vụ ảnh qua express.static("public") => path phải là dạng "/images/..."
-  if (typeof image === "string" && image.startsWith("/images/")) return image;
+  if (typeof image === "string") {
+    const trimmed = image.trim();
+
+    if (trimmed.startsWith("/images/")) {
+      return trimmed;
+    }
+
+    if (trimmed.startsWith("images/")) {
+      return `/${trimmed}`;
+    }
+
+    if (trimmed && !trimmed.includes("/") && !trimmed.includes("\\")) {
+      return `/images/${trimmed}`;
+    }
+  }
+
   return "/images/cake1.jpg";
 }
 
 function ensureDirSync(dirPath) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
 }
 
-const imagesDir = path.join(__dirname, "public", "images");
+const imagesDir = path.join(publicDir, "images");
 ensureDirSync(imagesDir);
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination(req, file, cb) {
     cb(null, imagesDir);
   },
-  filename: function (req, file, cb) {
+  filename(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
     const safeExt = ext || ".jpg";
     const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
@@ -71,68 +122,181 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = function (req, file, cb) {
-  if (!file) return cb(null, true);
+const fileFilter = function fileFilter(req, file, cb) {
+  if (!file) {
+    return cb(null, true);
+  }
+
   const allowed = new Set([
     "image/jpeg",
     "image/png",
     "image/webp",
     "image/gif",
   ]);
-  if (allowed.has(file.mimetype)) return cb(null, true);
+
+  if (allowed.has(file.mimetype)) {
+    return cb(null, true);
+  }
+
   return cb(null, false);
 };
 
 const upload = multer({ storage, fileFilter });
 
-app.get("/api/products", async (req, res) => {
+app.get("/products", async (req, res) => {
   try {
-    if (!isMongoConnected()) return res.status(503).json([]);
-
-    const q = (req.query.q || "").trim();
-    const filter = {};
-    if (q) {
-      const pattern = new RegExp(escapeRegExp(q), "i");
-      filter.$or = [{ name: pattern }, { description: pattern }];
+    if (!isMongoConnected()) {
+      return res.status(503).json([]);
     }
 
-    console.log("API /api/products called (from MongoDB)", { q: q || undefined });
-    const items = await Product.find(filter).lean();
-    // Trả về thêm `id` để frontend dùng `product.id` thay vì `_id`
-    const mapped = items.map((p) => ({
-      ...p,
-      id: p._id.toString(),
-      image: normalizeImagePath(p.image),
+    const items = await Product.find(buildCategoryFilter(req.query.category)).lean();
+    const mapped = items.map((item) => ({
+      ...item,
+      id: item._id.toString(),
+      image: normalizeImagePath(item.image),
     }));
-    res.json(mapped);
+
+    return res.json(mapped);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to load products" });
+    console.error("Loi GET /products:", err);
+    return res.status(500).json([]);
   }
 });
 
-app.get("/api/products/:id", async (req, res) => {
+app.get("/products/:id", async (req, res) => {
   try {
-    if (!isMongoConnected()) return res.status(503).json({});
+    if (!isMongoConnected()) {
+      return res.status(503).json({});
+    }
 
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid product id" });
     }
 
     const product = await Product.findById(id).lean();
+
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.json({
+    return res.json({
+      ...product,
+      id: product._id.toString(),
+      image: normalizeImagePath(product.image),
+    });
+  } catch (err) {
+    console.error("Loi GET /products/:id:", err);
+    return res.status(500).json({ message: "Failed to load product" });
+  }
+});
+
+app.get("/products/category/:categoryId", async (req, res) => {
+  try {
+    if (!isMongoConnected()) {
+      return res.status(503).json([]);
+    }
+
+    const { categoryId } = req.params;
+    const items = await Product.find(buildCategoryFilter(categoryId)).lean();
+    const mapped = items.map((item) => ({
+      ...item,
+      id: item._id.toString(),
+      image: normalizeImagePath(item.image),
+    }));
+
+    return res.json(mapped);
+  } catch (err) {
+    console.error("Loi GET /products/category/:categoryId:", err);
+    return res.status(500).json([]);
+  }
+});
+
+app.get("/products/search/keyword", async (req, res) => {
+  try {
+    if (!isMongoConnected()) {
+      return res.status(503).json([]);
+    }
+
+    const value = (req.query.value || "").trim();
+
+    if (!value) {
+      return res.json([]);
+    }
+
+    const pattern = new RegExp(escapeRegExp(value), "i");
+    const items = await Product.find({
+      $or: [{ name: pattern }, { description: pattern }],
+    }).lean();
+
+    const mapped = items.map((item) => ({
+      ...item,
+      id: item._id.toString(),
+      image: normalizeImagePath(item.image),
+    }));
+
+    return res.json(mapped);
+  } catch (err) {
+    console.error("Loi GET /products/search/keyword:", err);
+    return res.status(500).json([]);
+  }
+});
+
+app.get("/api/products", async (req, res) => {
+  try {
+    if (!isMongoConnected()) {
+      return res.status(503).json({ message: "MongoDB not connected" });
+    }
+
+    const q = (req.query.q || "").trim();
+    const filter = {};
+
+    if (q) {
+      const pattern = new RegExp(escapeRegExp(q), "i");
+      filter.$or = [{ name: pattern }, { description: pattern }];
+    }
+
+    const items = await Product.find(filter).lean();
+    const mapped = items.map((item) => ({
+      ...item,
+      id: item._id.toString(),
+      image: normalizeImagePath(item.image),
+    }));
+
+    return res.json(mapped);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to load products" });
+  }
+});
+
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    if (!isMongoConnected()) {
+      return res.status(503).json({});
+    }
+
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid product id" });
+    }
+
+    const product = await Product.findById(id).lean();
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    return res.json({
       ...product,
       id: product._id.toString(),
       image: normalizeImagePath(product.image),
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to load product" });
+    return res.status(500).json({ message: "Failed to load product" });
   }
 });
 
@@ -142,44 +306,54 @@ app.post("/api/products", upload.single("imageFile"), async (req, res) => {
       return res.status(503).json({ message: "MongoDB not connected" });
     }
 
-    // Nếu gửi file upload thì tự set path cho field `image`
     if (req.file && req.file.filename) {
       req.body.image = `/images/${req.file.filename}`;
     }
 
     const body = req.body || {};
-    if (body.price !== undefined) body.price = Number(body.price);
-    if (body.stock !== undefined && body.stock !== "") body.stock = Number(body.stock);
-    
-    // Parse tags, events, type từ string sang array/object
+
+    if (body.price !== undefined) {
+      body.price = Number(body.price);
+    }
+
+    if (body.stock !== undefined && body.stock !== "") {
+      body.stock = Number(body.stock);
+    }
+
     if (body.tags && typeof body.tags === "string") {
-      body.tags = body.tags.split(",").map((t) => t.trim()).filter(Boolean);
+      body.tags = body.tags.split(",").map((item) => item.trim()).filter(Boolean);
     }
+
     if (body.events && typeof body.events === "string") {
-      body.events = body.events.split(",").map((e) => e.trim()).filter(Boolean);
+      body.events = body.events
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
     }
+
     if (body.type && typeof body.type === "string") {
       try {
         body.type = JSON.parse(body.type);
       } catch (e) {
-        // nếu không phải JSON thì giữ nguyên
+        // Keep original value if parsing fails.
       }
     }
 
     const created = await Product.create(body);
-    const obj = created.toObject();
-    res.status(201).json({
-      ...obj,
-      id: obj._id.toString(),
-      image: normalizeImagePath(obj.image),
+    const object = created.toObject();
+
+    return res.status(201).json({
+      ...object,
+      id: object._id.toString(),
+      image: normalizeImagePath(object.image),
     });
   } catch (err) {
-    // Lỗi validate field (name/price bắt buộc, kiểu dữ liệu không hợp lệ...)
     if (err && err.name === "ValidationError") {
       return res.status(400).json({ message: err.message });
     }
+
     console.error(err);
-    res.status(500).json({ message: "Failed to create product" });
+    return res.status(500).json({ message: "Failed to create product" });
   }
 });
 
@@ -190,6 +364,7 @@ app.put("/api/products/:id", upload.single("imageFile"), async (req, res) => {
     }
 
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid product id" });
     }
@@ -199,21 +374,31 @@ app.put("/api/products/:id", upload.single("imageFile"), async (req, res) => {
     }
 
     const body = req.body || {};
-    if (body.price !== undefined) body.price = Number(body.price);
-    if (body.stock !== undefined && body.stock !== "") body.stock = Number(body.stock);
-    
-    // Parse tags, events, type từ string sang array/object
+
+    if (body.price !== undefined) {
+      body.price = Number(body.price);
+    }
+
+    if (body.stock !== undefined && body.stock !== "") {
+      body.stock = Number(body.stock);
+    }
+
     if (body.tags && typeof body.tags === "string") {
-      body.tags = body.tags.split(",").map((t) => t.trim()).filter(Boolean);
+      body.tags = body.tags.split(",").map((item) => item.trim()).filter(Boolean);
     }
+
     if (body.events && typeof body.events === "string") {
-      body.events = body.events.split(",").map((e) => e.trim()).filter(Boolean);
+      body.events = body.events
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
     }
+
     if (body.type && typeof body.type === "string") {
       try {
         body.type = JSON.parse(body.type);
       } catch (e) {
-        // nếu không phải JSON thì giữ nguyên
+        // Keep original value if parsing fails.
       }
     }
 
@@ -226,18 +411,20 @@ app.put("/api/products/:id", upload.single("imageFile"), async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const obj = updated.toObject ? updated.toObject() : updated;
-    res.json({
-      ...obj,
-      id: obj._id.toString(),
-      image: normalizeImagePath(obj.image),
+    const object = updated.toObject ? updated.toObject() : updated;
+
+    return res.json({
+      ...object,
+      id: object._id.toString(),
+      image: normalizeImagePath(object.image),
     });
   } catch (err) {
     if (err && err.name === "ValidationError") {
       return res.status(400).json({ message: err.message });
     }
+
     console.error(err);
-    res.status(500).json({ message: "Failed to update product" });
+    return res.status(500).json({ message: "Failed to update product" });
   }
 });
 
@@ -248,26 +435,29 @@ app.delete("/api/products/:id", async (req, res) => {
     }
 
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid product id" });
     }
 
     const deleted = await Product.findByIdAndDelete(id);
+
     if (!deleted) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // RESTful: xóa thành công thường trả 204
-    res.status(204).send();
+    return res.status(204).send();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to delete product" });
+    return res.status(500).json({ message: "Failed to delete product" });
   }
 });
 
 connectMongo()
-  .then(async () => {
-    if (!isMongoConnected()) console.log("MongoDB not connected yet - skipping seed");
+  .then(() => {
+    if (!isMongoConnected()) {
+      console.log("MongoDB not connected yet");
+    }
   })
   .finally(() => {
     app.listen(5000, "0.0.0.0", () => {

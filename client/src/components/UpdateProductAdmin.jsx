@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { API_BASE_URL } from "../utils/api";
+import { PRODUCT_CATEGORIES } from "../utils/categories";
 
-function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading }) {
-  const API_BASE = "http://localhost:5000";
+function UpdateProductAdmin({
+  products,
+  onProductUpdated,
+  loading,
+  setLoading,
+}) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [formData, setFormData] = useState({
@@ -11,72 +17,102 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
     category: "",
     stock: "",
     tags: "",
+    events: "",
     imageFile: null,
   });
 
-  const startEditProduct = (product) => {
+  function startEditProduct(product) {
     setSelectedProduct(product);
     setFormData({
       name: product.name || "",
       price: product.price || "",
       description: product.description || "",
-      category: product.type?.name || "",
+      category: product.type?.id || "",
       stock: product.stock || "",
       tags: (product.tags || []).join(", "),
+      events: (product.events || []).join(", "),
       imageFile: null,
     });
     setImagePreview(null);
-  };
+  }
 
-  async function handleUpdateProduct(e) {
-    e.preventDefault();
+  async function handleUpdateProduct(event) {
+    event.preventDefault();
+
     if (!selectedProduct) {
       alert("Chưa chọn sản phẩm để cập nhật.");
       return;
     }
 
     if (!formData.name.trim() || formData.price === "") {
-      alert("Vui lòng nhập tên và giá");
+      alert("Vui lòng nhập tên và giá.");
       return;
     }
 
     if (formData.stock === "") {
-      alert("Vui lòng nhập tồn kho");
+      alert("Vui lòng nhập tồn kho.");
+      return;
+    }
+
+    if (!formData.category) {
+      alert("Vui lòng chọn loại sản phẩm.");
       return;
     }
 
     try {
       setLoading(true);
-      const fData = new FormData();
-      fData.append("name", formData.name);
-      fData.append("price", formData.price);
-      fData.append("description", formData.description);
-      fData.append("stock", formData.stock);
-      
-      // Xử lý tags: phân tách theo dấu phẩy và trim khoảng trắng
-      const tagsArray = formData.tags
-        .split(",")
-        .map(tag => tag.trim())
-        .filter(tag => tag !== "");
-      fData.append("tags", JSON.stringify(tagsArray));
-      
-      fData.append("type", JSON.stringify({ name: formData.category }));
+
+      const selectedCategory = PRODUCT_CATEGORIES.find(
+        (item) => item.value === formData.category
+      );
+
+      const requestData = new FormData();
+      requestData.append("name", formData.name);
+      requestData.append("price", formData.price);
+      requestData.append("description", formData.description);
+      requestData.append("stock", formData.stock);
+      requestData.append(
+        "tags",
+        formData.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+          .join(",")
+      );
+      requestData.append(
+        "events",
+        formData.events
+          .split(",")
+          .map((event) => event.trim())
+          .filter(Boolean)
+          .join(",")
+      );
+      requestData.append(
+        "type",
+        JSON.stringify({
+          id: formData.category,
+          name: selectedCategory ? selectedCategory.label : "",
+        })
+      );
 
       if (formData.imageFile) {
-        fData.append("imageFile", formData.imageFile);
+        requestData.append("imageFile", formData.imageFile);
       }
 
-      const res = await fetch(`${API_BASE}/api/products/${selectedProduct.id}`, {
-        method: "PUT",
-        body: fData,
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/products/${selectedProduct.id}`,
+        {
+          method: "PUT",
+          body: requestData,
+        }
+      );
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Cập nhật sản phẩm thất bại");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Cập nhật sản phẩm thất bại.");
       }
 
-      alert("Cập nhật sản phẩm thành công");
+      alert("Cập nhật sản phẩm thành công.");
       setSelectedProduct(null);
       setImagePreview(null);
       setFormData({
@@ -86,6 +122,7 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
         category: "",
         stock: "",
         tags: "",
+        events: "",
         imageFile: null,
       });
       onProductUpdated();
@@ -96,18 +133,21 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
     }
   }
 
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, imageFile: file });
-      // Tạo preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setFormData({ ...formData, imageFile: null });
+      setImagePreview(null);
+      return;
     }
-  };
+
+    setFormData({ ...formData, imageFile: file });
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+  }
 
   return (
     <section className="admin-form-section">
@@ -122,8 +162,8 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
             <input
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+              onChange={(event) =>
+                setFormData({ ...formData, name: event.target.value })
               }
               placeholder="Nhập tên sản phẩm"
               required
@@ -134,8 +174,8 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
             <label>Mô tả</label>
             <textarea
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
+              onChange={(event) =>
+                setFormData({ ...formData, description: event.target.value })
               }
               placeholder="Nhập mô tả sản phẩm"
               rows="4"
@@ -143,12 +183,12 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
           </div>
 
           <div className="form-group">
-            <label>Giá (VNĐ) *</label>
+            <label>Giá (VND) *</label>
             <input
               type="number"
               value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
+              onChange={(event) =>
+                setFormData({ ...formData, price: event.target.value })
               }
               placeholder="Nhập giá"
               min="0"
@@ -157,12 +197,12 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
           </div>
 
           <div className="form-group">
-            <label>Tồn kho (Số lượng) *</label>
+            <label>Tồn kho *</label>
             <input
               type="number"
               value={formData.stock}
-              onChange={(e) =>
-                setFormData({ ...formData, stock: e.target.value })
+              onChange={(event) =>
+                setFormData({ ...formData, stock: event.target.value })
               }
               placeholder="Nhập số lượng tồn kho"
               min="0"
@@ -171,36 +211,50 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
           </div>
 
           <div className="form-group">
-            <label>Loại sản phẩm (Category)</label>
+            <label>Loại sản phẩm *</label>
+            <select
+              value={formData.category}
+              onChange={(event) =>
+                setFormData({ ...formData, category: event.target.value })
+              }
+              required
+            >
+              <option value="">Chọn loại sản phẩm</option>
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Tags</label>
             <input
               type="text"
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
+              value={formData.tags}
+              onChange={(event) =>
+                setFormData({ ...formData, tags: event.target.value })
               }
-              placeholder="VD: Bánh ngọt, Kẹo & Snack ngọt"
+              placeholder="Ví dụ: sinh nhật, tặng quà"
             />
           </div>
 
           <div className="form-group">
-            <label>Tags (Nhãn)</label>
+            <label>Sự kiện</label>
             <input
               type="text"
-              value={formData.tags}
-              onChange={(e) =>
-                setFormData({ ...formData, tags: e.target.value })
+              value={formData.events}
+              onChange={(event) =>
+                setFormData({ ...formData, events: event.target.value })
               }
-              placeholder="VD: tiệc thiếu nhi, dã ngoại, phần thưởng học sinh (cách nhau bằng dấu phẩy)"
+              placeholder="Ví dụ: sinh nhật, kỷ niệm"
             />
           </div>
 
           <div className="form-group">
             <label>Hình ảnh</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
+            <input type="file" accept="image/*" onChange={handleImageChange} />
             {imagePreview && (
               <div style={{ marginTop: "10px" }}>
                 <img
@@ -224,10 +278,9 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
         </form>
       )}
 
-      {/* Danh sách chọn sản phẩm */}
       <h3 style={{ marginTop: "30px" }}>Danh sách sản phẩm</h3>
       {products.length === 0 ? (
-        <p className="no-products">Không có sản phẩm</p>
+        <p className="no-products">Không có sản phẩm.</p>
       ) : (
         <div className="products-table">
           <table>
@@ -236,7 +289,7 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
                 <th>Tên</th>
                 <th>Giá</th>
                 <th>Tồn kho</th>
-                <th>Tags</th>
+                <th>Loại</th>
                 <th>Hành động</th>
               </tr>
             </thead>
@@ -252,18 +305,13 @@ function UpdateProductAdmin({ products, onProductUpdated, loading, setLoading })
                   }}
                 >
                   <td>{product.name}</td>
-                  <td>
-                    {Number(product.price).toLocaleString("vi-VN")} VNĐ
-                  </td>
+                  <td>{Number(product.price).toLocaleString("vi-VN")} VND</td>
                   <td>{product.stock}</td>
-                  <td>
-                    {product.tags && product.tags.length > 0
-                      ? product.tags.join(", ")
-                      : "-"}
-                  </td>
+                  <td>{product.type?.name || "-"}</td>
                   <td>
                     <button
                       className="submit-btn"
+                      type="button"
                       onClick={() => startEditProduct(product)}
                     >
                       Chọn để sửa

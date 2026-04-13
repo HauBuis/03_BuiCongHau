@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { DEFAULT_PRODUCT_IMAGE, getImageUrl } from "../utils/api";
 
 function ProductCard({ product, onUpdate, onDelete }) {
+  const navigate = useNavigate();
   const productId = product?.id || product?._id;
-  const defaultImage = useMemo(() => "/images/cake1.jpg", []);
+  const isAdminMode = Boolean(onUpdate && onDelete);
 
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
@@ -10,53 +13,61 @@ function ProductCard({ product, onUpdate, onDelete }) {
     price: product?.price ?? "",
     description: product?.description || "",
     stock: product?.stock ?? "",
-    image: product?.image || defaultImage,
+    image: product?.image || DEFAULT_PRODUCT_IMAGE,
     imageFile: null,
   });
   const [saving, setSaving] = useState(false);
 
-  function beginEdit() {
+  function resetForm() {
     setForm({
       name: product?.name || "",
       price: product?.price ?? "",
       description: product?.description || "",
       stock: product?.stock ?? "",
-      image: product?.image || defaultImage,
+      image: product?.image || DEFAULT_PRODUCT_IMAGE,
       imageFile: null,
     });
+  }
+
+  function beginEdit() {
+    resetForm();
     setIsEditing(true);
   }
 
-  async function handleSave(e) {
-    e.preventDefault();
-    if (!productId) return;
-    if (!String(form.name).trim() || form.price === "") {
-      alert("Vui lòng nhập đủ `name` và `price`.");
+  function goToDetail() {
+    if (!productId) {
       return;
     }
 
-    const payload = {
-      name: String(form.name),
-      price: Number(form.price),
-      description: form.description || "",
-      stock: form.stock === "" ? 0 : Number(form.stock),
-      image: form.image || defaultImage,
-    };
+    navigate(`/products/${productId}`);
+  }
+
+  async function handleSave(event) {
+    event.preventDefault();
+
+    if (!productId || !onUpdate) {
+      return;
+    }
+
+    if (!String(form.name).trim() || form.price === "") {
+      alert("Vui lòng nhập đầy đủ tên và giá.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("name", String(form.name).trim());
+    formData.append("price", String(Number(form.price)));
+    formData.append("description", form.description || "");
+    formData.append("stock", String(form.stock === "" ? 0 : Number(form.stock)));
+
+    if (form.imageFile) {
+      formData.append("imageFile", form.imageFile);
+    } else {
+      formData.append("image", form.image || DEFAULT_PRODUCT_IMAGE);
+    }
 
     try {
       setSaving(true);
-      const formData = new FormData();
-      formData.append("name", payload.name);
-      formData.append("price", String(payload.price));
-      formData.append("description", payload.description);
-      formData.append("stock", String(payload.stock));
-      if (form.imageFile) {
-        formData.append("imageFile", form.imageFile);
-      } else {
-        // Nếu không chọn file mới thì giữ nguyên ảnh cũ
-        formData.append("image", payload.image);
-      }
-
       await onUpdate(productId, formData);
       setIsEditing(false);
     } finally {
@@ -65,14 +76,17 @@ function ProductCard({ product, onUpdate, onDelete }) {
   }
 
   function handleDelete() {
-    if (!productId) return;
+    if (!productId || !onDelete) {
+      return;
+    }
+
     onDelete(productId);
   }
 
   return (
     <div className="product-card">
       <img
-        src={`http://localhost:5000${product.image || defaultImage}`}
+        src={getImageUrl(product?.image || DEFAULT_PRODUCT_IMAGE)}
         alt={product?.name || "Product"}
         className="product-image"
       />
@@ -80,72 +94,101 @@ function ProductCard({ product, onUpdate, onDelete }) {
       <h3>{product?.name}</h3>
       <p>{product?.description}</p>
       <p className="price">
-        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 }).format(product.price)}
+        {new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+          minimumFractionDigits: 0,
+        }).format(Number(product?.price || 0))}
       </p>
 
-      {!isEditing ? (
-        <div className="crud-actions">
-          <button className="crud-button crud-button-secondary" type="button" onClick={beginEdit}>
-            Sửa
-          </button>
-          <button className="crud-button crud-button-danger" type="button" onClick={handleDelete}>
-            Xóa
-          </button>
-        </div>
-      ) : (
-        <form className="crud-inline-form" onSubmit={handleSave}>
-          <input
-            className="crud-input"
-            placeholder="Tên sản phẩm"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <input
-            className="crud-input"
-            type="number"
-            placeholder="Giá"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-          />
-          <input
-            className="crud-input"
-            type="number"
-            placeholder="Tồn kho"
-            value={form.stock}
-            onChange={(e) => setForm({ ...form, stock: e.target.value })}
-          />
-          <input
-            className="crud-input"
-            placeholder="Mô tả"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-          <div className="crud-actions" style={{ alignItems: "center" }}>
-            <input
-              className="crud-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-                setForm({ ...form, imageFile: file });
-              }}
-            />
-          </div>
-
+      {isAdminMode ? (
+        !isEditing ? (
           <div className="crud-actions">
-            <button className="crud-button" type="submit" disabled={saving}>
-              {saving ? "Đang lưu..." : "Lưu"}
-            </button>
             <button
               className="crud-button crud-button-secondary"
               type="button"
-              onClick={() => setIsEditing(false)}
-              disabled={saving}
+              onClick={beginEdit}
             >
-              Hủy
+              Sửa
+            </button>
+            <button
+              className="crud-button crud-button-danger"
+              type="button"
+              onClick={handleDelete}
+            >
+              Xóa
             </button>
           </div>
-        </form>
+        ) : (
+          <form className="crud-inline-form" onSubmit={handleSave}>
+            <input
+              className="crud-input"
+              placeholder="Tên sản phẩm"
+              value={form.name}
+              onChange={(event) =>
+                setForm({ ...form, name: event.target.value })
+              }
+            />
+            <input
+              className="crud-input"
+              type="number"
+              placeholder="Giá"
+              value={form.price}
+              onChange={(event) =>
+                setForm({ ...form, price: event.target.value })
+              }
+            />
+            <input
+              className="crud-input"
+              type="number"
+              placeholder="Tồn kho"
+              value={form.stock}
+              onChange={(event) =>
+                setForm({ ...form, stock: event.target.value })
+              }
+            />
+            <input
+              className="crud-input"
+              placeholder="Mô tả"
+              value={form.description}
+              onChange={(event) =>
+                setForm({ ...form, description: event.target.value })
+              }
+            />
+
+            <div className="crud-actions" style={{ alignItems: "center" }}>
+              <input
+                className="crud-input"
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  setForm({ ...form, imageFile: file });
+                }}
+              />
+            </div>
+
+            <div className="crud-actions">
+              <button className="crud-button" type="submit" disabled={saving}>
+                {saving ? "Đang lưu..." : "Lưu"}
+              </button>
+              <button
+                className="crud-button crud-button-secondary"
+                type="button"
+                onClick={() => setIsEditing(false)}
+                disabled={saving}
+              >
+                Hủy
+              </button>
+            </div>
+          </form>
+        )
+      ) : (
+        <div className="crud-actions">
+          <button className="view-detail-btn" type="button" onClick={goToDetail}>
+            Xem chi tiết
+          </button>
+        </div>
       )}
     </div>
   );

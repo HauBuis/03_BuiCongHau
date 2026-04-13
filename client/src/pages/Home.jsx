@@ -8,32 +8,28 @@ function Home() {
     <div className="home-page">
       <section className="hero">
         <h2>Chào mừng đến với Cake & Candy Paradise</h2>
-        <p>Những chiếc bánh ngọt và kẹo tuyệt vời nhất cho bạn</p>
-        <button
-          className="cta-button"
-          onClick={() => navigate("/products")}
-        >
+        <p>Những chiếc bánh ngọt và kẹo ngon dành cho bạn</p>
+        <button className="cta-button" onClick={() => navigate("/products")}>
           Xem sản phẩm
         </button>
       </section>
 
       <section className="features">
         <div className="feature-card">
-          <h3> Bánh Ngọt</h3>
-          <p>Những chiếc bánh tươi mới hàng ngày</p>
+          <h3>Bánh ngọt</h3>
+          <p>Sản phẩm được cập nhật thường xuyên.</p>
         </div>
         <div className="feature-card">
-          <h3> Kẹo Ngon</h3>
-          <p>Các loại kẹo chọn lọc từ khắp nơi</p>
+          <h3>Kẹo ngon</h3>
+          <p>Lựa chọn phù hợp cho nhiều dịp khác nhau.</p>
         </div>
       </section>
 
       <section className="about">
         <h2>Về chúng tôi</h2>
         <p>
-          Cake & Candy Paradise là một cửa hàng bán bánh ngọt và kẹo với
-          chất lượng hàng đầu. Chúng tôi cam kết mang đến những sản phẩm
-          tuyệt vời nhất cho khách hàng.
+          Đây là trang web giới thiệu và quản lý sản phẩm bánh kẹo với giao
+          diện đơn giản, dễ sử dụng và dễ mở rộng.
         </p>
       </section>
     </div>

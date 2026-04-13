@@ -22,7 +22,7 @@ const ProductSchema = new mongoose.Schema(
     events: [{ type: String }],
   },
   {
-    collection: "products",
+    collection: "CakeCandy",
     timestamps: true,
   }
 );

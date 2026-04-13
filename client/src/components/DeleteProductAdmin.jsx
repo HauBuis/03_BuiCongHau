@@ -1,22 +1,29 @@
-import React, { useState } from "react";
+import React from "react";
+import { API_BASE_URL } from "../utils/api";
 
-function DeleteProductAdmin({ products, onProductDeleted, loading, setLoading }) {
-  const API_BASE = "http://localhost:5000";
-
+function DeleteProductAdmin({
+  products,
+  onProductDeleted,
+  loading,
+  setLoading,
+}) {
   async function handleDeleteProduct(id) {
-    if (!window.confirm("Xóa sản phẩm này?")) return;
+    if (!window.confirm("Xóa sản phẩm này?")) {
+      return;
+    }
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/products/${id}`, {
+
+      const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
         method: "DELETE",
       });
 
-      if (!res.ok && res.status !== 204) {
-        throw new Error("Xóa sản phẩm thất bại");
+      if (!response.ok && response.status !== 204) {
+        throw new Error("Xóa sản phẩm thất bại.");
       }
 
-      alert("Xóa sản phẩm thành công");
+      alert("Xóa sản phẩm thành công.");
       onProductDeleted();
     } catch (err) {
       alert(`Lỗi: ${err.message}`);
@@ -28,14 +35,12 @@ function DeleteProductAdmin({ products, onProductDeleted, loading, setLoading })
   return (
     <section className="admin-form-section">
       <h2>Xóa sản phẩm</h2>
+      <p>Hãy nhấn nút xóa trong danh sách sản phẩm bên dưới.</p>
 
-      <p>Bạn đang ở chế độ xóa. Hãy nhấn nút "Xóa" trong danh sách sản phẩm bên dưới.</p>
-
-      {/* Danh sách sản phẩm */}
       <div style={{ marginTop: "30px" }}>
         <h3>Danh sách sản phẩm</h3>
         {products.length === 0 ? (
-          <p className="no-products">Không có sản phẩm</p>
+          <p className="no-products">Không có sản phẩm.</p>
         ) : (
           <div className="products-table">
             <table>
@@ -52,9 +57,7 @@ function DeleteProductAdmin({ products, onProductDeleted, loading, setLoading })
                 {products.map((product) => (
                   <tr key={product.id}>
                     <td>{product.name}</td>
-                    <td>
-                      {Number(product.price).toLocaleString("vi-VN")} VNĐ
-                    </td>
+                    <td>{Number(product.price).toLocaleString("vi-VN")} VND</td>
                     <td>{product.stock}</td>
                     <td>
                       {product.tags && product.tags.length > 0

@@ -5,11 +5,11 @@ function Footer() {
     <footer className="footer">
       <div className="footer-content">
         <p>&copy; 2025 Cake & Candy Paradise. All rights reserved.</p>
-        <ul className="footer-links">
+        {/* <ul className="footer-links">
           <li><a href="/">Trang chủ</a></li>
           <li><a href="/#products">Sản phẩm</a></li>
           <li><a href="/#contact">Liên hệ</a></li>
-        </ul>
+        </ul> */}
       </div>
     </footer>
   );

@@ -246,10 +246,11 @@ html, body, #root {
 
 .footer-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
+  text-align: center;
 }
 
 .footer-links {
@@ -768,23 +769,6 @@ html, body, #root {
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
-}
-
-.add-to-cart-btn {
-  padding: 12px 30px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 20px;
-  transition: background 0.3s ease;
-}
-
-.add-to-cart-btn:hover {
-  background: #45a049;
 }
 
 .out-of-stock {

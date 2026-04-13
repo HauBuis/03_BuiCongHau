@@ -5,19 +5,21 @@ function Sidebar({ currentPage }) {
   const navigate = useNavigate();
   const [expandedMenu, setExpandedMenu] = useState(null);
 
-  const toggleMenu = (menuName) => {
-    setExpandedMenu(expandedMenu === menuName ? null : menuName);
-  };
+  function toggleMenu(menuName) {
+    setExpandedMenu((current) => (current === menuName ? null : menuName));
+  }
 
-  const isActive = (page) => {
+  function isActive(page) {
     if (page === "products") {
-      return currentPage === "products" || currentPage === "detail" || currentPage === "search";
+      return currentPage === "products";
     }
+
     if (page === "admin") {
       return currentPage === "admin";
     }
+
     return currentPage === page;
-  };
+  }
 
   return (
     <aside className="sidebar">
@@ -26,7 +28,6 @@ function Sidebar({ currentPage }) {
       </div>
 
       <nav className="sidebar-nav">
-        {/* Trang chủ */}
         <button
           className={`sidebar-link ${isActive("home") ? "active" : ""}`}
           onClick={() => navigate("/")}
@@ -34,7 +35,6 @@ function Sidebar({ currentPage }) {
           Trang chủ
         </button>
 
-        {/* Sản phẩm */}
         <div className="sidebar-group">
           <button
             className={`sidebar-link group-title ${isActive("products") ? "active" : ""}`}
@@ -44,7 +44,9 @@ function Sidebar({ currentPage }) {
             }}
           >
             <span>Sản phẩm</span>
-            <span className={`chevron ${expandedMenu === "products" ? "open" : ""}`}>˅</span>
+            <span className={`chevron ${expandedMenu === "products" ? "open" : ""}`}>
+              v
+            </span>
           </button>
 
           {expandedMenu === "products" && (
@@ -52,17 +54,22 @@ function Sidebar({ currentPage }) {
               <button className="submenu-link" onClick={() => navigate("/products")}>
                 Tất cả sản phẩm
               </button>
-              <button className="submenu-link" onClick={() => navigate("/products?category=bánh-ngọt")}>
+              <button
+                className="submenu-link"
+                onClick={() => navigate("/products?category=banh-ngot")}
+              >
                 Bánh ngọt
               </button>
-              <button className="submenu-link" onClick={() => navigate("/products?category=kẹo-snack")}>
+              <button
+                className="submenu-link"
+                onClick={() => navigate("/products?category=keo-ngot")}
+              >
                 Kẹo ngọt
               </button>
             </div>
           )}
         </div>
 
-        {/* Admin */}
         <div className="sidebar-group">
           <button
             className={`sidebar-link group-title ${isActive("admin") ? "active" : ""}`}
@@ -72,7 +79,9 @@ function Sidebar({ currentPage }) {
             }}
           >
             <span>Admin</span>
-            <span className={`chevron ${expandedMenu === "admin" ? "open" : ""}`}>˅</span>
+            <span className={`chevron ${expandedMenu === "admin" ? "open" : ""}`}>
+              v
+            </span>
           </button>
 
           {expandedMenu === "admin" && (
@@ -80,29 +89,27 @@ function Sidebar({ currentPage }) {
               <button className="submenu-link" onClick={() => navigate("/admin/add")}>
                 Thêm sản phẩm
               </button>
-              <button className="submenu-link" onClick={() => navigate("/admin/update")}>
+              <button
+                className="submenu-link"
+                onClick={() => navigate("/admin/update")}
+              >
                 Cập nhật sản phẩm
               </button>
-              <button className="submenu-link" onClick={() => navigate("/admin/delete")}>
+              <button
+                className="submenu-link"
+                onClick={() => navigate("/admin/delete")}
+              >
                 Xóa sản phẩm
               </button>
             </div>
           )}
         </div>
 
-        {/* Liên hệ */}
-        <button
-          className="sidebar-link"
-          onClick={() => navigate("/")}
-        >
+        <button className="sidebar-link" onClick={() => navigate("/")}>
           Liên hệ
         </button>
 
-        {/* Tìm kiếm */}
-        <button
-          className="sidebar-link"
-          onClick={() => navigate("/products")}
-        >
+        <button className="sidebar-link" onClick={() => navigate("/products")}>
           Tìm kiếm
         </button>
       </nav>

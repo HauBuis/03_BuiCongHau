@@ -1,33 +1,35 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import AddProductAdmin from "../components/AddProductAdmin";
-import UpdateProductAdmin from "../components/UpdateProductAdmin";
 import DeleteProductAdmin from "../components/DeleteProductAdmin";
+import UpdateProductAdmin from "../components/UpdateProductAdmin";
+import { API_BASE_URL } from "../utils/api";
 
 function Admin() {
-  const { mode: modeProp } = useParams();
+  const { mode: routeMode } = useParams();
   const navigate = useNavigate();
-  const API_BASE = "http://localhost:5000";
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState(modeProp || "add");
+  const [mode, setMode] = useState(routeMode || "add");
 
   useEffect(() => {
     loadProducts();
   }, []);
 
   useEffect(() => {
-    setMode(modeProp || "add");
-  }, [modeProp]);
+    setMode(routeMode || "add");
+  }, [routeMode]);
 
   async function loadProducts() {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/products`);
-      const data = await res.json();
-      setProducts(data);
+      const response = await fetch(`${API_BASE_URL}/api/products`);
+      const data = await response.json();
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Lỗi fetch API:", err);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
