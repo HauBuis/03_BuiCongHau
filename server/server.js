@@ -46,6 +46,14 @@ function escapeRegExp(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function normalizeVietnameseText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function buildCategoryFilter(categoryValue) {
   const normalized = String(categoryValue || "").trim().toLowerCase();
 
@@ -149,7 +157,33 @@ app.get("/products", async (req, res) => {
       return res.status(503).json([]);
     }
 
-    const items = await Product.find(buildCategoryFilter(req.query.category)).lean();
+    const filter = buildCategoryFilter(req.query.category);
+    const minPrice =
+      req.query.minPrice !== undefined && req.query.minPrice !== ""
+        ? Number(req.query.minPrice)
+        : null;
+    const maxPrice =
+      req.query.maxPrice !== undefined && req.query.maxPrice !== ""
+        ? Number(req.query.maxPrice)
+        : null;
+
+    if (minPrice !== null || maxPrice !== null) {
+      filter.price = {};
+
+      if (minPrice !== null && !Number.isNaN(minPrice)) {
+        filter.price.$gte = minPrice;
+      }
+
+      if (maxPrice !== null && !Number.isNaN(maxPrice)) {
+        filter.price.$lte = maxPrice;
+      }
+
+      if (Object.keys(filter.price).length === 0) {
+        delete filter.price;
+      }
+    }
+
+    const items = await Product.find(filter).lean();
     const mapped = items.map((item) => ({
       ...item,
       id: item._id.toString(),
@@ -225,12 +259,22 @@ app.get("/products/search/keyword", async (req, res) => {
       return res.json([]);
     }
 
-    const pattern = new RegExp(escapeRegExp(value), "i");
-    const items = await Product.find({
-      $or: [{ name: pattern }, { description: pattern }],
-    }).lean();
+    const normalizedKeyword = normalizeVietnameseText(value);
+    const items = await Product.find().lean();
+    const filteredItems = items.filter((item) => {
+      const searchValues = [
+        item.name,
+        item.description,
+        ...(Array.isArray(item.tags) ? item.tags : []),
+        ...(Array.isArray(item.events) ? item.events : []),
+      ];
 
-    const mapped = items.map((item) => ({
+      return searchValues.some((searchValue) =>
+        normalizeVietnameseText(searchValue).includes(normalizedKeyword)
+      );
+    });
+
+    const mapped = filteredItems.map((item) => ({
       ...item,
       id: item._id.toString(),
       image: normalizeImagePath(item.image),

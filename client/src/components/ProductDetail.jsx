@@ -12,6 +12,13 @@ function formatBadgeLabel(value) {
     .trim();
 }
 
+function getOccasionLabels(product) {
+  const tags = Array.isArray(product?.tags) ? product.tags : [];
+  const events = Array.isArray(product?.events) ? product.events : [];
+
+  return [...new Set([...events, ...tags].map(formatBadgeLabel).filter(Boolean))];
+}
+
 function ProductDetail() {
   const { id: productId } = useParams();
   const navigate = useNavigate();
@@ -64,6 +71,7 @@ function ProductDetail() {
   }
 
   const imageUrl = getImageUrl(product.image || DEFAULT_PRODUCT_IMAGE);
+  const occasionLabels = getOccasionLabels(product);
 
   return (
     <div className="product-detail-page">
@@ -104,26 +112,13 @@ function ProductDetail() {
             </div>
           )}
 
-          {product.tags && product.tags.length > 0 && (
-            <div className="detail-tags">
-              <h3>Tags</h3>
-              <div className="tags-list">
-                {product.tags.map((tag, index) => (
-                  <span key={index} className="tag-badge">
-                    {formatBadgeLabel(tag)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {product.events && product.events.length > 0 && (
-            <div className="detail-events">
-              <h3>Sự kiện</h3>
-              <div className="events-list">
-                {product.events.map((event, index) => (
-                  <span key={index} className="event-badge">
-                    {formatBadgeLabel(event)}
+          {occasionLabels.length > 0 && (
+            <div className="detail-occasions">
+              <h3>Phù hợp cho</h3>
+              <div className="occasions-list">
+                {occasionLabels.map((label, index) => (
+                  <span key={`${label}-${index}`} className="occasion-badge">
+                    {label}
                   </span>
                 ))}
               </div>
