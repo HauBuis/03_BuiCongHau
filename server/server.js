@@ -12,6 +12,28 @@ const Product = require("./db/products");
 
 const app = express();
 const publicDir = path.join(__dirname, "public");
+const IMAGE_DIRECTORY_PATH = "/images";
+const DEFAULT_IMAGE_PATH = "/images/cake1.jpg";
+const CAKE_TYPE_IDS = ["T01", "T02", "T04", "T05", "T06"];
+const CANDY_TYPE_IDS = ["T03", "T07"];
+const PRODUCT_TYPE_GROUPS = {
+  "banh-ngot": {
+    ids: CAKE_TYPE_IDS,
+    label: "Bánh ngọt",
+    namePattern: /bánh/i,
+  },
+  "keo-ngot": {
+    ids: CANDY_TYPE_IDS,
+    label: "Kẹo ngọt",
+    namePattern: /kẹo/i,
+  },
+};
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 app.use(cors());
 app.use(express.json());
@@ -61,22 +83,16 @@ function buildCategoryFilter(categoryValue) {
     return {};
   }
 
-  if (normalized === "banh-ngot") {
-    return {
-      $or: [
-        { "type.id": "banh-ngot" },
-        { "type.id": { $in: ["T01", "T02", "T04", "T05", "T06"] } },
-        { "type.name": /bánh/i },
-      ],
-    };
-  }
+  const normalizedCategoryKey =
+    normalized === "keo-snack" ? "keo-ngot" : normalized;
+  const groupedCategory = PRODUCT_TYPE_GROUPS[normalizedCategoryKey];
 
-  if (normalized === "keo-ngot" || normalized === "keo-snack") {
+  if (groupedCategory) {
     return {
       $or: [
-        { "type.id": "keo-ngot" },
-        { "type.id": { $in: ["T03", "T07"] } },
-        { "type.name": /kẹo/i },
+        { "type.id": normalizedCategoryKey },
+        { "type.id": { $in: groupedCategory.ids } },
+        { "type.name": groupedCategory.namePattern },
       ],
     };
   }
@@ -95,29 +111,80 @@ function normalizeProductType(type) {
   }
 
   const rawId = String(type.id || "").trim().toUpperCase();
-  const rawName = String(type.name || "").trim().toLowerCase();
+  const rawName = String(type.name || "").trim();
+  const normalizedName = rawName.toLowerCase();
 
   if (
-    ["BANH-NGOT", "T01", "T02", "T04", "T05", "T06"].includes(rawId) ||
-    rawName === "bánh ngọt"
+    ["BANH-NGOT", ...CAKE_TYPE_IDS].includes(rawId) ||
+    normalizedName === "bánh ngọt"
   ) {
     return {
-      id: ["T01", "T02", "T04", "T05", "T06"].includes(rawId) ? rawId : "T01",
-      name: "Bánh ngọt",
+      id: CAKE_TYPE_IDS.includes(rawId) ? rawId : CAKE_TYPE_IDS[0],
+      name: PRODUCT_TYPE_GROUPS["banh-ngot"].label,
     };
   }
 
   if (
-    ["KEO-NGOT", "T03", "T07"].includes(rawId) ||
-    rawName === "kẹo ngọt"
+    ["KEO-NGOT", ...CANDY_TYPE_IDS].includes(rawId) ||
+    normalizedName === "kẹo ngọt"
   ) {
     return {
-      id: ["T03", "T07"].includes(rawId) ? rawId : "T03",
-      name: "Kẹo ngọt",
+      id: CANDY_TYPE_IDS.includes(rawId) ? rawId : CANDY_TYPE_IDS[0],
+      name: PRODUCT_TYPE_GROUPS["keo-ngot"].label,
     };
   }
 
   return type;
+}
+
+function parseOptionalNumber(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isNaN(parsedValue) ? null : parsedValue;
+}
+
+function parseStringList(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function parseProductType(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
+}
+
+function normalizeProductPayload(body, file) {
+  const normalizedBody = sanitizeProductBody(body);
+
+  if (file?.filename) {
+    normalizedBody.image = `${IMAGE_DIRECTORY_PATH}/${file.filename}`;
+  }
+
+  if (normalizedBody.price !== undefined) {
+    normalizedBody.price = Number(normalizedBody.price);
+  }
+
+  if (normalizedBody.stock !== undefined && normalizedBody.stock !== "") {
+    normalizedBody.stock = Number(normalizedBody.stock);
+  }
+
+  normalizedBody.tags = parseStringList(normalizedBody.tags) || [];
+  normalizedBody.type = normalizeProductType(parseProductType(normalizedBody.type));
+
+  return normalizedBody;
 }
 
 function normalizeImagePath(image) {
@@ -137,7 +204,7 @@ function normalizeImagePath(image) {
     }
   }
 
-  return "/images/cake1.jpg";
+  return DEFAULT_IMAGE_PATH;
 }
 
 function sanitizeProductBody(body) {
@@ -211,19 +278,12 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = function fileFilter(req, file, cb) {
+  const fileFilter = function fileFilter(req, file, cb) {
   if (!file) {
     return cb(null, true);
   }
 
-  const allowed = new Set([
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-  ]);
-
-  if (allowed.has(file.mimetype)) {
+  if (ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
     return cb(null, true);
   }
 
@@ -239,14 +299,8 @@ app.get("/products", async (req, res) => {
     }
 
     const filter = buildCategoryFilter(req.query.category);
-    const minStock =
-      req.query.minStock !== undefined && req.query.minStock !== ""
-        ? Number(req.query.minStock)
-        : null;
-    const maxStock =
-      req.query.maxStock !== undefined && req.query.maxStock !== ""
-        ? Number(req.query.maxStock)
-        : null;
+    const minStock = parseOptionalNumber(req.query.minStock);
+    const maxStock = parseOptionalNumber(req.query.maxStock);
 
     if (minStock !== null || maxStock !== null) {
       filter.stock = {};
@@ -416,31 +470,7 @@ app.post("/api/products", upload.single("imageFile"), async (req, res) => {
       req.body.image = `/images/${req.file.filename}`;
     }
 
-    const body = sanitizeProductBody(req.body);
-
-    if (body.price !== undefined) {
-      body.price = Number(body.price);
-    }
-
-    if (body.stock !== undefined && body.stock !== "") {
-      body.stock = Number(body.stock);
-    }
-
-    if (body.tags && typeof body.tags === "string") {
-      body.tags = body.tags.split(",").map((item) => item.trim()).filter(Boolean);
-    }
-
-    if (body.type && typeof body.type === "string") {
-      try {
-        body.type = JSON.parse(body.type);
-      } catch (e) {
-        // Keep original value if parsing fails.
-      }
-    }
-
-    if (body.type && typeof body.type === "object") {
-      body.type = normalizeProductType(body.type);
-    }
+    const body = normalizeProductPayload(req.body, req.file);
 
     body.id = await generateNextProductCode();
 
@@ -476,31 +506,7 @@ app.put("/api/products/:id", upload.single("imageFile"), async (req, res) => {
       req.body.image = `/images/${req.file.filename}`;
     }
 
-    const body = sanitizeProductBody(req.body);
-
-    if (body.price !== undefined) {
-      body.price = Number(body.price);
-    }
-
-    if (body.stock !== undefined && body.stock !== "") {
-      body.stock = Number(body.stock);
-    }
-
-    if (body.tags && typeof body.tags === "string") {
-      body.tags = body.tags.split(",").map((item) => item.trim()).filter(Boolean);
-    }
-
-    if (body.type && typeof body.type === "string") {
-      try {
-        body.type = JSON.parse(body.type);
-      } catch (e) {
-        // Keep original value if parsing fails.
-      }
-    }
-
-    if (body.type && typeof body.type === "object") {
-      body.type = normalizeProductType(body.type);
-    }
+    const body = normalizeProductPayload(req.body, req.file);
 
     const updated = await Product.findByIdAndUpdate(id, body, {
       new: true,

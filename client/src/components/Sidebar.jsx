@@ -1,6 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const productMenuItems = [
+  { label: "Tất cả sản phẩm", path: "/products" },
+  { label: "Bánh ngọt", path: "/products?category=banh-ngot" },
+  { label: "Kẹo ngọt", path: "/products?category=keo-ngot" },
+];
+
+const adminMenuItems = [
+  { label: "Thêm sản phẩm", path: "/admin/add" },
+  { label: "Cập nhật sản phẩm", path: "/admin/update" },
+  { label: "Xóa sản phẩm", path: "/admin/delete" },
+  { label: "Import sản phẩm", path: "/admin/import" },
+];
+
 function Sidebar({ currentPage }) {
   const navigate = useNavigate();
   const [expandedMenu, setExpandedMenu] = useState(null);
@@ -19,6 +32,22 @@ function Sidebar({ currentPage }) {
     }
 
     return currentPage === page;
+  }
+
+  function renderSubmenu(items) {
+    return (
+      <div className="submenu">
+        {items.map((item) => (
+          <button
+            key={item.path}
+            className="submenu-link"
+            onClick={() => navigate(item.path)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -44,30 +73,10 @@ function Sidebar({ currentPage }) {
             }}
           >
             <span>Sản phẩm</span>
-            <span className={`chevron ${expandedMenu === "products" ? "open" : ""}`}>
-              
-            </span>
+            <span className={`chevron ${expandedMenu === "products" ? "open" : ""}`} />
           </button>
 
-          {expandedMenu === "products" && (
-            <div className="submenu">
-              <button className="submenu-link" onClick={() => navigate("/products")}>
-                Tất cả sản phẩm
-              </button>
-              <button
-                className="submenu-link"
-                onClick={() => navigate("/products?category=banh-ngot")}
-              >
-                Bánh ngọt
-              </button>
-              <button
-                className="submenu-link"
-                onClick={() => navigate("/products?category=keo-ngot")}
-              >
-                Kẹo ngọt
-              </button>
-            </div>
-          )}
+          {expandedMenu === "products" ? renderSubmenu(productMenuItems) : null}
         </div>
 
         <div className="sidebar-group">
@@ -79,36 +88,10 @@ function Sidebar({ currentPage }) {
             }}
           >
             <span>Admin</span>
-            <span className={`chevron ${expandedMenu === "admin" ? "open" : ""}`}>
-              
-            </span>
+            <span className={`chevron ${expandedMenu === "admin" ? "open" : ""}`} />
           </button>
 
-          {expandedMenu === "admin" && (
-            <div className="submenu">
-              <button className="submenu-link" onClick={() => navigate("/admin/add")}>
-                Thêm sản phẩm
-              </button>
-              <button
-                className="submenu-link"
-                onClick={() => navigate("/admin/update")}
-              >
-                Cập nhật sản phẩm
-              </button>
-              <button
-                className="submenu-link"
-                onClick={() => navigate("/admin/delete")}
-              >
-                Xóa sản phẩm
-              </button>
-              <button
-                className="submenu-link"
-                onClick={() => navigate("/admin/import")}
-              >
-                Import sản phẩm
-              </button>
-            </div>
-          )}
+          {expandedMenu === "admin" ? renderSubmenu(adminMenuItems) : null}
         </div>
 
         <button className="sidebar-link" onClick={() => navigate("/")}>

@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import AddProductAdmin from "../components/AddProductAdmin";
-import DeleteProductAdmin from "../components/DeleteProductAdmin";
 import ImportProductsAdmin from "../components/ImportProductsAdmin";
-import UpdateProductAdmin from "../components/UpdateProductAdmin";
+import ProductManagementAdmin from "../components/ProductManagementAdmin";
 import { API_BASE_URL } from "../components/productShared";
 
 const DEFAULT_MODE = "add";
@@ -41,18 +39,15 @@ function Admin() {
 
     switch (mode) {
       case "update":
-        return (
-          <UpdateProductAdmin
-            {...sharedProps}
-            products={products}
-            onProductUpdated={loadProducts}
-          />
-        );
       case "delete":
+      case "add":
         return (
-          <DeleteProductAdmin
+          <ProductManagementAdmin
             {...sharedProps}
+            mode={mode}
             products={products}
+            onProductAdded={loadProducts}
+            onProductUpdated={loadProducts}
             onProductDeleted={loadProducts}
           />
         );
@@ -63,12 +58,15 @@ function Admin() {
             onProductsImported={loadProducts}
           />
         );
-      case "add":
       default:
         return (
-          <AddProductAdmin
+          <ProductManagementAdmin
             {...sharedProps}
+            mode="add"
+            products={products}
             onProductAdded={loadProducts}
+            onProductUpdated={loadProducts}
+            onProductDeleted={loadProducts}
           />
         );
     }

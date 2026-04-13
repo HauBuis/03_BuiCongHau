@@ -3,7 +3,11 @@ import * as XLSX from "xlsx";
 import { API_BASE_URL, PRODUCT_CATEGORIES } from "./productShared";
 
 const CATEGORY_ALIASES = [
-  { value: "banh-ngot", label: "Bánh ngọt", ids: ["T01", "T02", "T04", "T05", "T06"] },
+  {
+    value: "banh-ngot",
+    label: "Bánh ngọt",
+    ids: ["T01", "T02", "T04", "T05", "T06"],
+  },
   { value: "keo-ngot", label: "Kẹo ngọt", ids: ["T03", "T07"] },
 ];
 
